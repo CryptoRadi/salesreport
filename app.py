@@ -1,10 +1,7 @@
-# pylint: disable=missing-module-docstring
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
+import locale
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-
 
 st.set_page_config(page_title="Sales Dashboard",
                    page_icon=":bar_chart:",
@@ -12,96 +9,85 @@ st.set_page_config(page_title="Sales Dashboard",
                    )
 
 uploaded_file = st.file_uploader('Choose a XLSX file', type='xlsx')
+
 # ---- READ EXCEL ----
-
-
 @st.cache
 def get_data_from_excel():
+    """Reads data from excel file and return DataFrame """
     df = pd.read_excel(
-        # io='SI,RI,PMGand RCS FY23 sales report.xlsx',
         uploaded_file,
         engine='openpyxl',
         sheet_name='Report 1',
-        skiprows=1,
-        usecols='P, Q, T, AD, AE, AI',
-    )
+        skiprows=1,usecols='P, Q, T, AD, AE, AI'
+        )
     return df
-
 
 if uploaded_file:
     df = get_data_from_excel()
 
     df = df[df["Sales Rep Name"].str.contains(
-        "RADI, UMMAIR|ABU QAZA, AHMED|@MOH TENDER")]
+    "@MOH TENDER|RADI, UMMAIR|HARARAH, AHMED|ABOELENAN, SHAFEIK|IBRAHIM, AHMED|"
+    "ALZAHRANI, SAEED|MAREY, MOSTAFA|AL-HAID, RAZAN WALID|KHATER, AHMED|ABU QAZA, AHMED|"
+    "TURKISTANI, ADNAN|ALQAHTANI, ABDULLAH"
+    )]
 
-    df.rename(columns={'Net Trade Sales in TAR @ AOP FX': 'Total',
-                       'Sales Order PO Number': 'PO Number'}, inplace=True)
+    df = df.rename(columns={'Net Trade Sales in TAR @ AOP FX': 'Total',
+                            'Sales Order PO Number': 'PO Number',
+                            'GFS Std Level 9 Desc': 'Group'})
 
-    df = df[df['PO Number'].str.contains('Sample') == False]
-    df = df[df['PO Number'].str.contains('sample') == False]
-    df['PO Number'] = df['PO Number'].str.split(' ').str[0]
-    df['PO Number'] = df['PO Number'].str.split('-').str[0]
+    df['PO Number'] = df['PO Number'].str.extract(r'^(\d+)', expand=False)
 
     df.dropna(subset=["Total", "PO Number"], inplace=True)
+    df = df[df["Total"] != 0.000]
 
-    # st.dataframe(df)
 
-    # # ---- SIDEBAR ----
+    # ---- SIDEBAR ----
     st.sidebar.header("Please Filter Here:")
 
-    qtr = st.sidebar.multiselect(
+    def filter_data(data, column, options):
+        """
+        Filter the dataframe using the given column and options.
+        :param data: The DataFrame to be filtered
+        :param column: The column on which to filter the data
+        :param options: The options to include in the filtered data
+        :returns: The filtered DataFrame
+        """
+        if options is not None:
+            data = data[data[column].isin(options)]
+        return data
+
+    filters = {}
+
+    options = st.sidebar.multiselect(
         "Select Quarter:",
         options=df['Fiscal Qtr'].unique(),
         default=df['Fiscal Qtr'].unique()
-    )
-
-    if qtr is not True:
-        sales_rep = df['Sales Rep Name'].where(
-            df['Fiscal Qtr'].isin(qtr)).dropna()
-
-        sales_rep = st.sidebar.multiselect(
-            "Select Sales Rep:",
-            options=sales_rep.unique(),
-            default=sales_rep.unique()
         )
-        if sales_rep is not True:
-            po = df['PO Number'].where(
-                df['Sales Rep Name'].isin(sales_rep)).dropna()
-            po = df['PO Number'].where(
-                df['Fiscal Qtr'].isin(qtr)).dropna()
+    filters['Fiscal Qtr'] = options
+    df = filter_data(df, 'Fiscal Qtr', options)
 
-            po = st.sidebar.multiselect(
-                "Select PO Number:",
-                options=po.unique(),
-                default=po.unique()
-            )
+    options = st.sidebar.multiselect(
+        "Select Sales Rep:",
+        options=df['Sales Rep Name'].unique(),
+        default=df['Sales Rep Name'].unique()
+        )
+    filters['Sales Rep Name'] = options
+    df = filter_data(df, 'Sales Rep Name', options)
 
-            st.sidebar.header("Risk Assessment:")
-
-            if po is not True:
-                invoice = df['Invoice Number'].where(
-                    df['PO Number'].isin(po)).dropna()
-                invoice = st.sidebar.multiselect(
-                    "Select Invoice Number:",
-                    options=invoice.unique(),
-                    # default=invoice.unique()
-                )
-
-    df_selection = df.query(
-        "`Fiscal Qtr` == @qtr & `Sales Rep Name` == @sales_rep & `PO Number` == @po"
-    )
-    df_selection_inv = df.query(
-        "`Fiscal Qtr` == @qtr & `Sales Rep Name` == @sales_rep & `Invoice Number` == @invoice & `PO Number` == @po"
-    )
+    options = st.sidebar.multiselect(
+        "Select PO Number:",
+        options=df['PO Number'].unique(),
+        default=df['PO Number'].unique()
+        )
+    filters['PO Number'] = options
+    df = filter_data(df, 'PO Number', options)
 
     # ---- MAINPAGE ----
     st.title(":bar_chart: Sales Dashboard")
     st.markdown("##")
 
     # TOP KPI's
-    total_sales = int(df_selection["Total"].sum())
-    total_invoice = int(df_selection_inv["Total"].sum())
-    total_risk = int(total_sales - total_invoice)
+    total_sales = round(df['Total'].sum(), 2)
 
     cpad1, col, pad2 = st.columns((10, 10, 10))
     with col:
@@ -109,46 +95,56 @@ if uploaded_file:
         st.subheader(f"US $ {total_sales:,}")
     st.markdown("##")
 
-    cpad1, col, pad2 = st.columns((10, 10, 10))
-    with col:
-        st.subheader("Risk: ")
-        st.subheader(f" US $ {total_invoice:,}")
-    st.markdown("##")
-
-    cpad1, col, pad2 = st.columns((10, 10, 10))
-    with col:
-        st.subheader("Total: ")
-        st.subheader(f" US $ {total_risk:,}")
-
-        # f'<h1 style="color:#33ff33;"> US $ {total_invoice: ,}</h1>', unsafe_allow_html=True)
-
     st.markdown("""---""")
 
-    # SALES REP [BAR CHART]
-    sales_by_rep = df_selection.groupby(by=["Sales Rep Name"]).sum()[["Total"]]
+    # CHARTS
+    sales_by_rep = df.groupby(by=["Sales Rep Name"]).sum()[["Total"]]
+
+    # Sales Rep Bar Chart
+    # Show text outside the bar in USD
+    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+    sales_by_rep["formatted_text"] = sales_by_rep["Total"].apply(
+                                        lambda x:locale.currency(x, grouping=True))
+
     fig_sales = px.bar(
         sales_by_rep,
-        x=sales_by_rep.index, text_auto=True,
-        y="Total",
-        title="<b>Sales by Sales Rep Name</b>",
+        x="Total",
+        y=sales_by_rep.index,
+        text='formatted_text',
+        text_auto=False,
+        title="<b>Sales by Sales Rep</b>",
         color_discrete_sequence=["#0083B8"] * len(sales_by_rep),
         template="plotly_white",
+        orientation='h'
     )
+    fig_sales.update_traces(textposition='outside')
+
     fig_sales.update_layout(
-        xaxis=dict(tickmode="linear"),
+        xaxis=(dict(showgrid=False)),
+        yaxis=dict(tickmode="linear"),
         plot_bgcolor="rgba(0,0,0,0)",
-        yaxis=(dict(showgrid=False)),
+        xaxis_title="Total Sales",
+        yaxis_title="Sales Rep",
+        margin=dict(
+        l=30,
+        r=30,
+        b=50,
+        t=50,
+        pad=10
+    ),
     )
     st.plotly_chart(fig_sales, use_container_width=True, color=sales_by_rep)
 
-    # st.dataframe(df_selection)
+    # Quarter Pie Chart
+    fig = px.pie(
+        df,
+        values='Total',
+        names='Fiscal Qtr',
+        title='<b>Total Sales by Quarter (%)</b>',
+        color_discrete_sequence=px.colors.diverging.RdYlBu_r
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-# ---- HIDE STREAMLIT STYLE ----
-# hide_st_style = """
-#             <style>
-#             #MainMenu {visibility: hidden;}
-#             footer {visibility: hidden;}
-#             header {visibility: hidden;}
-#             </style>
-#             """
-# st.markdown(hide_st_style, unsafe_allow_html=True)
+    st.markdown("""---""")
+
+    st.dataframe(df)
