@@ -102,7 +102,7 @@ if uploaded_file:
 
     # Sales Rep Bar Chart
     # Show text outside the bar in USD
-    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+    locale.setlocale(locale.LC_ALL, locale.getdefaultlocale())
     sales_by_rep["formatted_text"] = sales_by_rep["Total"].apply(
                                         lambda x:locale.currency(x, grouping=True))
 
