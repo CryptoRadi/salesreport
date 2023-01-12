@@ -1,4 +1,4 @@
-import locale
+from babel.numbers import format_currency
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -102,9 +102,7 @@ if uploaded_file:
 
     # Sales Rep Bar Chart
     # Show text outside the bar in USD
-    locale.setlocale(locale.LC_ALL, locale.getdefaultlocale())
-    sales_by_rep["formatted_text"] = sales_by_rep["Total"].apply(
-                                        lambda x:locale.currency(x, grouping=True))
+    sales_by_rep["formatted_text"] = sales_by_rep["Total"].apply(lambda x: format_currency(x, 'USD', locale='en_US', currency_digits=True))
 
     fig_sales = px.bar(
         sales_by_rep,
