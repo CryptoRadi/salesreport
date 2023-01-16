@@ -99,6 +99,7 @@ if uploaded_file:
 
     # CHARTS
     sales_by_rep = df.groupby(by=["Sales Rep Name"]).sum()[["Total"]]
+    sales_by_rep2 = df.groupby(by=["Sales Rep Name","Fiscal Qtr"]).sum()[["Total"]]
 
     # Sales Rep Bar Chart
     # Show text outside the bar in USD
@@ -110,6 +111,8 @@ if uploaded_file:
         y=sales_by_rep.index,
         text='formatted_text',
         text_auto=False,
+        # color = "Fiscal Qtr",
+        # hover_data='Fiscal Qtr',
         title="<b>Sales by Sales Rep</b>",
         color_discrete_sequence=["#0083B8"] * len(sales_by_rep),
         template="plotly_white",
@@ -139,8 +142,10 @@ if uploaded_file:
         values='Total',
         names='Fiscal Qtr',
         title='<b>Total Sales by Quarter (%)</b>',
-        color_discrete_sequence=px.colors.diverging.RdYlBu_r
+        color_discrete_sequence=px.colors.diverging.RdYlBu_r,
+        hole=0.3
     )
+    fig.update_traces(textposition='inside', textinfo='percent+label')
     st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("""---""")
