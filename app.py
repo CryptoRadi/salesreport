@@ -28,7 +28,7 @@ if uploaded_file:
     df = df[df["Sales Rep Name"].str.contains(
     "@MOH TENDER|RADI, UMMAIR|HARARAH, AHMED|ABOELENAN, SHAFEIK|IBRAHIM, AHMED|"
     "ALZAHRANI, SAEED|MAREY, MOSTAFA|AL-HAID, RAZAN WALID|KHATER, AHMED|ABU QAZA, AHMED|"
-    "TURKISTANI, ADNAN|ALQAHTANI, ABDULLAH"
+    "TURKISTANI, ADNAN|ALQAHTANI, ABDULLAH|UNASSIGNED"
     )]
 
     df = df.rename(columns={'Net Trade Sales in TAR @ AOP FX': 'Total',
@@ -99,11 +99,11 @@ if uploaded_file:
 
     # CHARTS
     sales_by_rep = df.groupby(by=["Sales Rep Name"]).sum()[["Total"]]
-    sales_by_rep2 = df.groupby(by=["Sales Rep Name","Fiscal Qtr"]).sum()[["Total"]]
 
     # Sales Rep Bar Chart
     # Show text outside the bar in USD
     sales_by_rep["formatted_text"] = sales_by_rep["Total"].apply(lambda x: format_currency(x, 'USD', locale='en_US', currency_digits=True))
+    sales_by_rep["PO Number"] = df.groupby(by=["Sales Rep Name"])["PO Number"].apply(list)
 
     fig_sales = px.bar(
         sales_by_rep,
@@ -112,7 +112,7 @@ if uploaded_file:
         text='formatted_text',
         text_auto=False,
         # color = "Fiscal Qtr",
-        # hover_data='Fiscal Qtr',
+        hover_data=['PO Number'],
         title="<b>Sales by Sales Rep</b>",
         color_discrete_sequence=["#0083B8"] * len(sales_by_rep),
         template="plotly_white",
@@ -150,4 +150,4 @@ if uploaded_file:
 
     st.markdown("""---""")
 
-    st.dataframe(df)
+    st.dataframe(df, use_container_width=True)
