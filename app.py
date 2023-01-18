@@ -46,6 +46,7 @@ if uploaded_file:
 
     # ---- SIDEBAR ----
     st.sidebar.header("Please Filter Here:")
+    st.sidebar.info("When filtering, please make sure to CLEAR \n- SELECT ALL")
 
     def filter_data(data, column, options):
         """
