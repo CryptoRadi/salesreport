@@ -61,28 +61,42 @@ if uploaded_file:
 
     filters = {}
 
+    # Select Qaurter filter
     options = st.sidebar.multiselect(
         "Select Quarter:",
-        options=df['Fiscal Qtr'].unique(),
-        default=df['Fiscal Qtr'].unique()
+        options=['Select All'] + list(df['Fiscal Qtr'].unique()),
+        default=['Select All']
         )
+    if 'Select All' in options:
+        options = df['Fiscal Qtr'].unique()
+    else:
+        options = list(set(options).intersection(set(df['Fiscal Qtr'].unique())))
     filters['Fiscal Qtr'] = options
     df = filter_data(df, 'Fiscal Qtr', options)
 
+    # Select Sales Rep filter
     options = st.sidebar.multiselect(
         "Select Sales Rep:",
-        options=df['Sales Rep Name'].unique(),
-        default=df['Sales Rep Name'].unique()
+        options=['Select All'] + list(df['Sales Rep Name'].unique()),
+        default=['Select All']
         )
+    if 'Select All' in options:
+        options = df['Sales Rep Name'].unique()
+    else:
+        options = list(set(options).intersection(set(df['Sales Rep Name'].unique())))
     filters['Sales Rep Name'] = options
     df = filter_data(df, 'Sales Rep Name', options)
 
+    # Select PO Number filter
     options = st.sidebar.multiselect(
         "Select PO Number:",
-        options=df['PO Number'].unique(),
-        default=df['PO Number'].unique()
-        )
-    options = list(set(options).intersection(set(df['PO Number'].unique())))
+        options=['Select All'] + list(df['PO Number'].unique()),
+        default=['Select All']
+    )
+    if 'Select All' in options:
+        options = df['PO Number'].unique()
+    else:
+        options = list(set(options).intersection(set(df['PO Number'].unique())))
     filters['PO Number'] = options
     df = filter_data(df, 'PO Number', options)
 
@@ -118,7 +132,7 @@ if uploaded_file:
         # color = "Fiscal Qtr",
         hover_data=['PO Number'],
         title="<b>Sales by Sales Rep</b>",
-        color_discrete_sequence=["#0083B8"] * len(sales_by_rep),
+        color_discrete_sequence=["#0e72b5"] * len(sales_by_rep),
         template="plotly_white",
         orientation='h'
     )
@@ -155,3 +169,7 @@ if uploaded_file:
     st.markdown("""---""")
 
     st.dataframe(df, use_container_width=True)
+
+
+
+
