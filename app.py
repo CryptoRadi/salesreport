@@ -40,6 +40,9 @@ if uploaded_file:
     df.dropna(subset=["Total", "PO Number"], inplace=True)
     df = df[df["Total"] != 0.000]
 
+    df['PO Number'] = pd.to_numeric(df['PO Number'], errors='coerce')
+
+    # print(df['PO Number'].dtype)
 
     # ---- SIDEBAR ----
     st.sidebar.header("Please Filter Here:")
@@ -79,6 +82,7 @@ if uploaded_file:
         options=df['PO Number'].unique(),
         default=df['PO Number'].unique()
         )
+    options = list(set(options).intersection(set(df['PO Number'].unique())))
     filters['PO Number'] = options
     df = filter_data(df, 'PO Number', options)
 
@@ -98,7 +102,7 @@ if uploaded_file:
     st.markdown("""---""")
 
     # CHARTS
-    sales_by_rep = df.groupby(by=["Sales Rep Name"]).sum()[["Total"]]
+    sales_by_rep = df.groupby(by=["Sales Rep Name"], group_keys=False).sum()[["Total"]]
 
     # Sales Rep Bar Chart
     # Show text outside the bar in USD
