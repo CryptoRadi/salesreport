@@ -11,7 +11,7 @@ st.set_page_config(page_title="Sales Dashboard",
 uploaded_file = st.file_uploader('Choose a XLSX file', type='xlsx')
 
 # ---- READ EXCEL ----
-@st.cache(ttl=24*3600)
+@st.experimental_memo
 def get_data_from_excel():
     """Reads data from excel file and return DataFrame """
     df = pd.read_excel(
