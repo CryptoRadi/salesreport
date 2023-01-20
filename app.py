@@ -40,13 +40,10 @@ if uploaded_file:
     df.dropna(subset=["Total", "PO Number"], inplace=True)
     df = df[df["Total"] != 0.000]
 
-    df['PO Number'] = pd.to_numeric(df['PO Number'], errors='coerce')
-
-    # print(df['PO Number'].dtype)
 
     # ---- SIDEBAR ----
-    st.sidebar.header("Please Filter Here:")
     st.sidebar.info("When filtering, please make sure to CLEAR \n- SELECT ALL")
+    st.sidebar.header("Please Filter Here:")
 
     def filter_data(data, column, options):
         """
@@ -121,8 +118,13 @@ if uploaded_file:
 
     # Sales Rep Bar Chart
     # Show text outside the bar in USD
-    sales_by_rep["formatted_text"] = sales_by_rep["Total"].apply(lambda x: format_currency(x, 'USD', locale='en_US', currency_digits=True))
-    sales_by_rep["PO Number"] = df.groupby(by=["Sales Rep Name"])["PO Number"].apply(list)
+    sales_by_rep["formatted_text"] = (sales_by_rep["Total"]
+                                  .apply(lambda x: format_currency(x, 'USD',
+                                  locale='en_US',
+                                  currency_digits=True)))
+    sales_by_rep["hover_data"] = (df.groupby("Sales Rep Name")["PO Number"]
+                              .unique()
+                              .apply(lambda x: '<br>'.join(['PO Number: ' + i for i in x])))
 
     fig_sales = px.bar(
         sales_by_rep,
@@ -130,14 +132,13 @@ if uploaded_file:
         y=sales_by_rep.index,
         text='formatted_text',
         text_auto=False,
-        # color = "Fiscal Qtr",
-        hover_data=['PO Number'],
+        hover_data=['hover_data'],
         title="<b>Sales by Sales Rep</b>",
         color_discrete_sequence=["#0e72b5"] * len(sales_by_rep),
         template="plotly_white",
         orientation='h'
     )
-    fig_sales.update_traces(textposition='outside')
+    fig_sales.update_traces(textposition='outside', hovertemplate= '%{customdata[0]}')
 
     fig_sales.update_layout(
         xaxis=(dict(showgrid=False)),
@@ -170,7 +171,3 @@ if uploaded_file:
     st.markdown("""---""")
 
     st.dataframe(df, use_container_width=True)
-
-
-
-
