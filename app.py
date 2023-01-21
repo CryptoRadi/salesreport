@@ -24,6 +24,7 @@ def get_data_from_excel():
 
 if uploaded_file:
     df = get_data_from_excel()
+    st.session_state.df = df
 
     df = df[df["Sales Rep Name"].str.contains(
     "@MOH TENDER|RADI, UMMAIR|HARARAH, AHMED|ABOELENAN, SHAFEIK|IBRAHIM, AHMED|"
@@ -39,7 +40,10 @@ if uploaded_file:
 
     df.dropna(subset=["Total", "PO Number"], inplace=True)
     df = df[df["Total"] != 0.000]
+    st.session_state.df = df
 
+if st.session_state.df is not None:
+    df = st.session_state.df
 
     # ---- SIDEBAR ----
     st.sidebar.info("When filtering, please make sure to CLEAR \n- SELECT ALL")
@@ -71,6 +75,7 @@ if uploaded_file:
         options = list(set(options).intersection(set(df['Fiscal Qtr'].unique())))
     filters['Fiscal Qtr'] = options
     df = filter_data(df, 'Fiscal Qtr', options)
+    st.session_state.df = df
 
     # Select Sales Rep filter
     options = st.sidebar.multiselect(
@@ -84,6 +89,7 @@ if uploaded_file:
         options = list(set(options).intersection(set(df['Sales Rep Name'].unique())))
     filters['Sales Rep Name'] = options
     df = filter_data(df, 'Sales Rep Name', options)
+    st.session_state.df = df
 
     # Select PO Number filter
     options = st.sidebar.multiselect(
@@ -97,6 +103,7 @@ if uploaded_file:
         options = list(set(options).intersection(set(df['PO Number'].unique())))
     filters['PO Number'] = options
     df = filter_data(df, 'PO Number', options)
+    st.session_state.df = df
 
     # ---- MAINPAGE ----
     st.title(":bar_chart: Sales Dashboard")
@@ -171,3 +178,5 @@ if uploaded_file:
     st.markdown("""---""")
 
     st.dataframe(df, use_container_width=True)
+else:
+    st.warning("Please upload a file")
