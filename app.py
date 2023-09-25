@@ -14,6 +14,8 @@ st.set_page_config(page_title="Sales Dashboard",
 uploaded_file = st.file_uploader('Choose a XLSX file', type='xlsx')
 
 # Function to read data from the uploaded Excel file
+
+
 @st.cache_data
 def get_data_from_excel():
     """Reads data from excel file and return DataFrame """
@@ -21,27 +23,28 @@ def get_data_from_excel():
         uploaded_file,
         engine='openpyxl',
         sheet_name='Report 1',
-        skiprows=1,usecols='G, Q, R, U, V, AF, AJ'
-        )
+        skiprows=1, usecols='G, Q, R, U, V, AF, AJ'
+    )
     return df
+
 
 if uploaded_file:
     df = get_data_from_excel()
 
     # Filter the DataFrame
     df = df[df["Sales Rep Name"].str.contains(
-    "RADI, UMMAIR|UNASSIGNED"
+        "RADI, UMMAIR|UNASSIGNED"
     )]
 
     df = df.rename(columns={'Net Trade Sales in TAR @ AOP FX': 'Total',
                             'Sales Order PO Number': 'PO Number'})
 
     df = df[~df["Ship To Name"].str.contains(
-    "Zahran Operations & Maintanance Co.|NUPCO Dammam -Ryl Commision Store|"
-    "NUPCO Jeddah DC MOI-Security Forces|NUPCO Jeddah MOE -KAUH|"
-    "Prince Sultan Military Medical City|Al Marjan medical center company|"
-    "NUPCO Qassim DC - MOH Store|Care Medical Center-Riyadh|"
-    "Najran University Hospital"
+        "Zahran Operations & Maintanance Co.|NUPCO Dammam -Ryl Commision Store|"
+        "NUPCO Jeddah DC MOI-Security Forces|NUPCO Jeddah MOE -KAUH|"
+        "Prince Sultan Military Medical City|Al Marjan medical center company|"
+        "NUPCO Qassim DC - MOH Store|Care Medical Center-Riyadh|"
+        "Najran University Hospital"
     )]
 
     df['PO Number'] = df['PO Number'].str.extract(r'^(\d+)', expand=False)
@@ -49,10 +52,11 @@ if uploaded_file:
     df.dropna(subset=["Total", "PO Number"], inplace=True)
     df = df[df["Total"] != 0.000]
 
-    df['Invoice Number'] = df['Invoice Number'].astype(str) #remove commas
+    df['Invoice Number'] = df['Invoice Number'].astype(str)  # remove commas
 
     # ---- SIDEBAR ----
-    st.sidebar.info("When filtering, please make sure to CLEAR \n- SELECT ALL")
+    st.sidebar.info(
+        "When filtering, please make sure to CLEAR: \n- Select All")
     st.sidebar.header("Please Filter Here:")
 
     # Function to filter the DataFrame based on user-selected options
@@ -75,11 +79,12 @@ if uploaded_file:
         "Select Quarter:",
         options=['Select All'] + list(df['Fiscal Qtr'].unique()),
         default=['Select All']
-        )
+    )
     if 'Select All' in quarter_options:
         quarter_options = df['Fiscal Qtr'].unique()
     else:
-        quarter_options = list(set(quarter_options).intersection(set(df['Fiscal Qtr'].unique())))
+        quarter_options = list(set(quarter_options).intersection(
+            set(df['Fiscal Qtr'].unique())))
     filters['Fiscal Qtr'] = quarter_options
     df = filter_data(df, 'Fiscal Qtr', quarter_options)
 
@@ -88,11 +93,12 @@ if uploaded_file:
         "Select Sales Rep:",
         options=['Select All'] + list(df['Sales Rep Name'].unique()),
         default=['Select All']
-        )
+    )
     if 'Select All' in rep_options:
         rep_options = df['Sales Rep Name'].unique()
     else:
-        rep_options = list(set(rep_options).intersection(set(df['Sales Rep Name'].unique())))
+        rep_options = list(set(rep_options).intersection(
+            set(df['Sales Rep Name'].unique())))
     filters['Sales Rep Name'] = rep_options
     df = filter_data(df, 'Sales Rep Name', rep_options)
 
@@ -105,7 +111,8 @@ if uploaded_file:
     if 'Select All' in options:
         options = df['PO Number'].unique()
     else:
-        options = list(set(options).intersection(set(df['PO Number'].unique())))
+        options = list(set(options).intersection(
+            set(df['PO Number'].unique())))
     filters['PO Number'] = options
     df = filter_data(df, 'PO Number', options)
 
@@ -118,7 +125,8 @@ if uploaded_file:
     if 'Select All' in options:
         options = df['Ship To Name'].unique()
     else:
-        options = list(set(options).intersection(set(df['Ship To Name'].unique())))
+        options = list(set(options).intersection(
+            set(df['Ship To Name'].unique())))
     filters['Ship To Name'] = options
     df = filter_data(df, 'Ship To Name', options)
 
@@ -138,47 +146,51 @@ if uploaded_file:
     st.markdown("""---""")
 
     # CHARTS
-    sales_by_rep = df.groupby(by=["Sales Rep Name"], group_keys=False).sum()[["Total"]]
+    sales_by_rep = df.groupby(
+        by=["Sales Rep Name"], group_keys=False).sum()[["Total"]]
 
     # Sales Rep Bar Chart
     # Show text outside the bar in USD
     sales_by_rep["formatted_text"] = (sales_by_rep["Total"]
-                                .apply(lambda x: format_currency(x, 'USD',
-                                locale='en_US',
-                                currency_digits=True)))
+                                      .apply(lambda x: format_currency(x, 'USD',
+                                                                       locale='en_US',
+                                                                       currency_digits=True)))
     sales_by_rep["hover_data"] = (df.groupby("Sales Rep Name")["PO Number"]
-                            .unique()
-                            .apply(lambda x: '<br>'.join(['PO Number: ' + i for i in x])))
+                                  .unique()
+                                  .apply(lambda x: '<br>'.join(['PO Number: ' + i for i in x])))
 
     fig_sales = px.bar(
         sales_by_rep,
-        x="Total",
-        y=sales_by_rep.index,
+        y="Total",
+        x=sales_by_rep.index,
         text='formatted_text',
         text_auto=False,
         hover_data=['hover_data'],
         title="<b>Sales by Sales Rep</b>",
         color_discrete_sequence=["#0e72b5"] * len(sales_by_rep),
         template="plotly_white",
-        orientation='h'
+        orientation='v'
     )
-    fig_sales.update_traces(textposition='outside', hovertemplate= '%{customdata[0]}')
+    fig_sales.update_traces(textposition='outside',
+                            hovertemplate='%{customdata[0]}')
 
     fig_sales.update_layout(
         xaxis=(dict(showgrid=False)),
-        yaxis=dict(tickmode="linear"),
+        yaxis=dict(tickmode="auto"),
         plot_bgcolor="rgba(0,0,0,0)",
-        xaxis_title="Total Sales",
-        yaxis_title="Sales Rep",
+        xaxis_title="Sales Rep",
+        yaxis_title="Total Sales",
         margin=dict(
-        l=30,
-        r=30,
-        b=50,
-        t=50,
-        pad=10
-    ),
+            l=30,
+            r=30,
+            b=50,
+            t=50,
+            pad=10
+        ),
     )
     st.plotly_chart(fig_sales, use_container_width=True, color=sales_by_rep)
+
+    st.markdown("""---""")
 
     # Quarter Pie Chart
     fig = px.pie(
@@ -189,8 +201,64 @@ if uploaded_file:
         color_discrete_sequence=px.colors.diverging.RdYlBu_r,
         hole=0.3
     )
-    fig.update_traces(textposition='inside', textinfo='percent+label')
+    fig.update_traces(textposition='inside', textinfo='percent+label+value')
     st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("""---""")
+
+    # CFN Pie Chart
+    fig_2 = px.pie(
+        df,
+        values='Total',
+        names='CFN Id',
+        title='<b>Total Sales by CFN (%)</b>',
+        color_discrete_sequence=px.colors.diverging.RdYlBu_r,
+        hole=0.3
+    )
+
+    fig_2.update_traces(textposition='inside', textinfo='percent+label')
+    st.plotly_chart(fig_2, use_container_width=True)
+
+    st.markdown("""---""")
+
+    # CFN Bar
+    sales_by_cfn = df.groupby(
+        by=["CFN Id"], group_keys=False).sum()[["Total"]]
+
+    sales_by_cfn["formatted_text"] = (sales_by_cfn["Total"]
+                                      .apply(lambda x: format_currency(x, 'USD',
+                                                                       locale='en_US',
+                                                                       currency_digits=True)))
+
+    fig_CFN = px.bar(
+        sales_by_cfn,
+        y="Total",
+        x=sales_by_cfn.index,
+        text='formatted_text',
+        text_auto=False,
+        # hover_data=['hover_data'],
+        title="<b>Sales by CFN</b>",
+        color_discrete_sequence=["#0e72b5"],
+        template="plotly_white",
+        orientation='v'
+    )
+    fig_CFN.update_traces(textposition='outside')
+
+    fig_CFN.update_layout(
+        yaxis=dict(tickmode="auto"),
+        xaxis={'categoryorder': 'total descending'},
+        plot_bgcolor="rgba(0,0,0,0)",
+        xaxis_title="Total Sales",
+        yaxis_title="CFN",
+        margin=dict(
+            l=30,
+            r=30,
+            b=50,
+            t=50,
+            pad=10
+        ),
+    )
+    st.plotly_chart(fig_CFN, use_container_width=True)
 
     st.markdown("""---""")
 
