@@ -145,83 +145,130 @@ if uploaded_file:
 
     st.markdown("""---""")
 
-    # CHARTS
-    sales_by_rep = df.groupby(
-        by=["Sales Rep Name"], group_keys=False).sum()[["Total"]]
+    # Sales Rep Charts
+    bar1, bar2, bar3 = st.columns((20, 10, 20))
+    with bar1:
+        sales_by_rep = df.groupby(
+            by=["Sales Rep Name"], group_keys=False).sum()[["Total"]]
 
-    # Sales Rep Bar Chart
-    # Show text outside the bar in USD
-    sales_by_rep["formatted_text"] = (sales_by_rep["Total"]
-                                      .apply(lambda x: format_currency(x, 'USD',
-                                                                       locale='en_US',
-                                                                       currency_digits=True)))
-    sales_by_rep["hover_data"] = (df.groupby("Sales Rep Name")["PO Number"]
-                                  .unique()
-                                  .apply(lambda x: '<br>'.join(['PO Number: ' + i for i in x])))
+        # Sales Rep Bar Chart
+        # Show text outside the bar in USD
+        sales_by_rep["formatted_text"] = (sales_by_rep["Total"]
+                                          .apply(lambda x: format_currency(x, 'USD',
+                                                                           locale='en_US',
+                                                                           currency_digits=True)))
+        sales_by_rep["hover_data"] = (df.groupby("Sales Rep Name")["PO Number"]
+                                      .unique()
+                                      .apply(lambda x: '<br>'.join(['PO Number: ' + i for i in x])))
 
-    fig_sales = px.bar(
-        sales_by_rep,
-        y="Total",
-        x=sales_by_rep.index,
-        text='formatted_text',
-        text_auto=False,
-        hover_data=['hover_data'],
-        title="<b>Sales by Sales Rep</b>",
-        color_discrete_sequence=["#0e72b5"] * len(sales_by_rep),
-        template="plotly_white",
-        orientation='v'
-    )
-    fig_sales.update_traces(textposition='outside',
-                            hovertemplate='%{customdata[0]}')
+        fig_sales = px.bar(
+            sales_by_rep,
+            y="Total",
+            x=sales_by_rep.index,
+            text='formatted_text',
+            text_auto=False,
+            hover_data=['hover_data'],
+            title="<b>Sales by Sales Rep</b>",
+            color_discrete_sequence=["#0e72b5"] * len(sales_by_rep),
+            template="plotly_white",
+            orientation='v'
+        )
+        fig_sales.update_traces(textposition='outside',
+                                hovertemplate='%{customdata[0]}')
 
-    fig_sales.update_layout(
-        xaxis=(dict(showgrid=False)),
-        yaxis=dict(tickmode="auto"),
-        plot_bgcolor="rgba(0,0,0,0)",
-        xaxis_title="Sales Rep",
-        yaxis_title="Total Sales",
-        margin=dict(
-            l=30,
-            r=30,
-            b=50,
-            t=50,
-            pad=10
-        ),
-    )
-    st.plotly_chart(fig_sales, use_container_width=True, color=sales_by_rep)
+        fig_sales.update_layout(
+            xaxis=(dict(showgrid=False)),
+            yaxis=dict(tickmode="auto"),
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis_title="Sales Rep",
+            yaxis_title="Total Sales",
+            margin=dict(
+                l=30,
+                r=30,
+                b=50,
+                t=50,
+                pad=10
+            ),
+        )
+        st.plotly_chart(fig_sales, use_container_width=True,
+                        color=sales_by_rep)
 
-    st.markdown("""---""")
-
-    # Quarter Pie Chart
-    fig = px.pie(
-        df,
-        values='Total',
-        names='Fiscal Qtr',
-        title='<b>Total Sales by Quarter (%)</b>',
-        color_discrete_sequence=px.colors.diverging.RdYlBu_r,
-        hole=0.3
-    )
-    fig.update_traces(textposition='inside', textinfo='percent+label+value')
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown("""---""")
-
-    # CFN Pie Chart
-    fig_2 = px.pie(
-        df,
-        values='Total',
-        names='CFN Id',
-        title='<b>Total Sales by CFN (%)</b>',
-        color_discrete_sequence=px.colors.diverging.RdYlBu_r,
-        hole=0.3
-    )
-
-    fig_2.update_traces(textposition='inside', textinfo='percent+label')
-    st.plotly_chart(fig_2, use_container_width=True)
+    with bar3:
+        fig = px.pie(
+            df,
+            values='Total',
+            names='Sales Rep Name',
+            # title='<b>Total Sales by Quarter (%)</b>',
+            color_discrete_sequence=px.colors.diverging.RdYlBu_r,
+            hole=0.3
+        )
+        fig.update_traces(textposition='outside', textinfo='percent+label')
+        st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("""---""")
 
-    # CFN Bar
+    # Quarter Charts
+    bar4, bar5, bar6 = st.columns((20, 10, 20))
+    with bar4:
+
+        sales_by_qtr = df.groupby(
+            by=["Fiscal Qtr"], group_keys=False).sum()[["Total"]]
+
+        sales_by_qtr["formatted_text"] = (sales_by_qtr["Total"]
+                                          .apply(lambda x: format_currency(x, 'USD',
+                                                                           locale='en_US',
+                                                                           currency_digits=True)))
+        sales_by_qtr["hover_data"] = (df.groupby("Fiscal Qtr")["PO Number"]
+                                      .unique()
+                                      .apply(lambda x: '<br>'.join(['PO Number: ' + i for i in x])))
+
+        fig_qtr = px.bar(
+            sales_by_qtr,
+            y="Total",
+            x=sales_by_qtr.index,
+            text='formatted_text',
+            text_auto=False,
+            hover_data=['hover_data'],
+            title="<b>Sales by Quarter</b>",
+            color_discrete_sequence=["#0e72b5"] * len(sales_by_qtr),
+            template="plotly_white",
+            orientation='v'
+        )
+        fig_qtr.update_traces(textposition='outside',
+                              hovertemplate='%{customdata[0]}')
+
+        fig_qtr.update_layout(
+            xaxis=(dict(showgrid=False)),
+            yaxis=dict(tickmode="auto"),
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis_title="Quarter",
+            yaxis_title="Total Sales",
+            margin=dict(
+                l=30,
+                r=30,
+                b=50,
+                t=50,
+                pad=10
+            ),
+        )
+        st.plotly_chart(fig_qtr, use_container_width=True,
+                        color=sales_by_qtr)
+
+    with bar6:
+        fig = px.pie(
+            df,
+            values='Total',
+            names='Fiscal Qtr',
+            # title='<b>Total Sales by Quarter (%)</b>',
+            color_discrete_sequence=px.colors.diverging.RdYlBu_r,
+            hole=0.3
+        )
+        fig.update_traces(textposition='inside', textinfo='percent+label')
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("""---""")
+
+    # CFN Charts
     sales_by_cfn = df.groupby(
         by=["CFN Id"], group_keys=False).sum()[["Total"]]
 
@@ -229,7 +276,6 @@ if uploaded_file:
                                       .apply(lambda x: format_currency(x, 'USD',
                                                                        locale='en_US',
                                                                        currency_digits=True)))
-
     fig_CFN = px.bar(
         sales_by_cfn,
         y="Total",
@@ -259,6 +305,20 @@ if uploaded_file:
         ),
     )
     st.plotly_chart(fig_CFN, use_container_width=True)
+
+    st.markdown("""---""")
+
+    fig_2 = px.pie(
+        df,
+        values='Total',
+        names='CFN Id',
+        title='<b>Total Sales by CFN (%)</b>',
+        color_discrete_sequence=px.colors.diverging.RdYlBu_r,
+        hole=0.3
+    )
+
+    fig_2.update_traces(textposition='inside', textinfo='percent+label')
+    st.plotly_chart(fig_2, use_container_width=True)
 
     st.markdown("""---""")
 
