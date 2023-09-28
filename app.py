@@ -14,13 +14,14 @@ st.set_page_config(page_title="Sales Dashboard",
 uploaded_file = st.file_uploader('Choose a XLSX file', type='xlsx')
 
 # Function to read data from the uploaded Excel file
+cache_key = "data_" + str(uploaded_file)
 
 
-@st.cache_data
-def get_data_from_excel():
+@st.cache_data(experimental_allow_widgets=True)
+def get_data_from_excel(file):
     """Reads data from excel file and return DataFrame """
     df = pd.read_excel(
-        uploaded_file,
+        file,
         engine='openpyxl',
         sheet_name='Report 1',
         skiprows=1, usecols='G, Q, R, U, V, AF, AJ'
@@ -29,7 +30,7 @@ def get_data_from_excel():
 
 
 if uploaded_file:
-    df = get_data_from_excel()
+    df = get_data_from_excel(uploaded_file)
 
     # Filter the DataFrame
     df = df[df["Sales Rep Name"].str.contains(
@@ -43,8 +44,8 @@ if uploaded_file:
         "Zahran Operations & Maintanance Co.|NUPCO Dammam -Ryl Commision Store|"
         "NUPCO Jeddah DC MOI-Security Forces|NUPCO Jeddah MOE -KAUH|"
         "Prince Sultan Military Medical City|Al Marjan medical center company|"
-        "NUPCO Qassim DC - MOH Store|Care Medical Center-Riyadh|"
-        "Najran University Hospital"
+        "NUPCO Qassim DC - MOH Store|Care Medical Center-Riyadh|NUPCO KAEC DC MODA - KSAFH Tabuk|"
+        "Najran University Hospital|King Khaled Hospital - Majmaah|Ministry of Health Bisha"
     )]
 
     df['PO Number'] = df['PO Number'].str.extract(r'^(\d+)', expand=False)
@@ -53,6 +54,9 @@ if uploaded_file:
     df = df[df["Total"] != 0.000]
 
     df['Invoice Number'] = df['Invoice Number'].astype(str)  # remove commas
+
+    # if st.button("Clear Cache"):
+    #     st.rerun()
 
     # ---- SIDEBAR ----
     st.sidebar.info(
@@ -263,7 +267,8 @@ if uploaded_file:
             color_discrete_sequence=px.colors.diverging.RdYlBu_r,
             hole=0.3
         )
-        fig.update_traces(textposition='inside', textinfo='percent+label')
+        fig.update_traces(textposition='inside',
+                          textinfo='percent+label')
         st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("""---""")
@@ -272,30 +277,36 @@ if uploaded_file:
     sales_by_cfn = df.groupby(
         by=["CFN Id"], group_keys=False).sum()[["Total"]]
 
-    sales_by_cfn["formatted_text"] = (sales_by_cfn["Total"]
-                                      .apply(lambda x: format_currency(x, 'USD',
-                                                                       locale='en_US',
-                                                                       currency_digits=True)))
+    top_10_sales = sales_by_cfn.nlargest(10, 'Total')
+    top_10_sales["formatted_text"] = top_10_sales["Total"].apply(
+        lambda x: format_currency(x, 'USD', locale='en_US', currency_digits=True))
+
+    # ALL CFNs
+    # sales_by_cfn["formatted_text"] = (sales_by_cfn["Total"]
+    #                                   .apply(lambda x: format_currency(x, 'USD',
+    #                                                                    locale='en_US',
+    #                                                                    currency_digits=True)))
     fig_CFN = px.bar(
-        sales_by_cfn,
+        # sales_by_cfn,
+        top_10_sales,
         y="Total",
-        x=sales_by_cfn.index,
+        # x=sales_by_cfn.index,
+        x=top_10_sales.index,
         text='formatted_text',
         text_auto=False,
-        # hover_data=['hover_data'],
-        title="<b>Sales by CFN</b>",
+        title="<b>Top 10 Sales by CFN</b>",
         color_discrete_sequence=["#0e72b5"],
         template="plotly_white",
         orientation='v'
     )
-    fig_CFN.update_traces(textposition='outside')
+    fig_CFN.update_traces(textposition='outside', hovertemplate=None)
 
     fig_CFN.update_layout(
         yaxis=dict(tickmode="auto"),
         xaxis={'categoryorder': 'total descending'},
         plot_bgcolor="rgba(0,0,0,0)",
-        xaxis_title="Total Sales",
-        yaxis_title="CFN",
+        xaxis_title="CFN",
+        yaxis_title="Total Sales",
         margin=dict(
             l=30,
             r=30,
@@ -306,21 +317,30 @@ if uploaded_file:
     )
     st.plotly_chart(fig_CFN, use_container_width=True)
 
-    st.markdown("""---""")
+    # HIDE LESS THAN THRESHOLD
+    THRESHOLD_PERCENTAGE = 3
+    total_percentage = df['Total'].sum()
+    threshold_value = total_percentage * (THRESHOLD_PERCENTAGE / 100)
+    df_grouped = df.copy()
+    df_grouped.loc[df_grouped['Total'] < threshold_value, 'CFN Id'] = 'Others'
+    df_grouped['Percentage'] = df_grouped['Total'] / total_percentage * 100
+    df_grouped = df_grouped[df_grouped['CFN Id'] != 'Others'].round(2)
 
     fig_2 = px.pie(
-        df,
-        values='Total',
+        df_grouped,
+        values='Percentage',
         names='CFN Id',
-        title='<b>Total Sales by CFN (%)</b>',
         color_discrete_sequence=px.colors.diverging.RdYlBu_r,
-        hole=0.3
+        hole=0.4,
+        hover_data=['Total']
     )
 
-    fig_2.update_traces(textposition='inside', textinfo='percent+label')
+    fig_2.update_traces(title_text='<b>Higher than 3%</b>', title_position='middle center',
+                        textposition='inside',
+                        texttemplate='%{label}<br>%{value:.2f}%')
     st.plotly_chart(fig_2, use_container_width=True)
 
     st.markdown("""---""")
 
     # Display the filtered DataFrame
-    st.dataframe(df, use_container_width=True)
+    # st.dataframe(df, use_container_width=True)
