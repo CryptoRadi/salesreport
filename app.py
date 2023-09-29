@@ -273,74 +273,127 @@ if uploaded_file:
 
     st.markdown("""---""")
 
-    # CFN Charts
-    sales_by_cfn = df.groupby(
-        by=["CFN Id"], group_keys=False).sum()[["Total"]]
+    # CFN Charts only the VALUE
+    # sales_by_cfn = df.groupby(
+    #     by=["CFN Id"], group_keys=False).sum()[["Total"]]
 
-    top_10_sales = sales_by_cfn.nlargest(10, 'Total')
-    top_10_sales["formatted_text"] = top_10_sales["Total"].apply(
-        lambda x: format_currency(x, 'USD', locale='en_US', currency_digits=True))
+    # top_10_sales = sales_by_cfn.nlargest(10, 'Total')
+    # top_10_sales["formatted_text"] = top_10_sales["Total"].apply(
+    #     lambda x: format_currency(x, 'USD', locale='en_US', currency_digits=True))
 
     # ALL CFNs
     # sales_by_cfn["formatted_text"] = (sales_by_cfn["Total"]
     #                                   .apply(lambda x: format_currency(x, 'USD',
     #                                                                    locale='en_US',
     #                                                                    currency_digits=True)))
+    # fig_CFN = px.bar(
+    #     # sales_by_cfn,
+    #     top_10_sales,
+    #     y="Total",
+    #     # x=sales_by_cfn.index,
+    #     x=top_10_sales.index,
+    #     text='formatted_text',
+    #     text_auto=False,
+    #     title="<b>Top 10 Sales by CFN</b>",
+    #     color_discrete_sequence=["#0e72b5"],
+    #     template="plotly_white",
+    #     orientation='v'
+    # )
+    # fig_CFN.update_traces(textposition='outside', hovertemplate='%{text}')
+
+    # fig_CFN.update_layout(
+    #     yaxis=dict(tickmode="auto"),
+    #     xaxis={'categoryorder': 'total descending'},
+    #     plot_bgcolor="rgba(0,0,0,0)",
+    #     xaxis_title="CFN",
+    #     yaxis_title="Total Sales",
+    #     margin=dict(
+    #         l=30,
+    #         r=30,
+    #         b=50,
+    #         t=50,
+    #         pad=10
+    #     ),
+    # )
+    # st.plotly_chart(fig_CFN, use_container_width=True)
+
+    total_sales = df["Total"].sum()
+
+    # Group by CFN and calculate the sum of "Total" for each CFN
+    sales_by_cfn = df.groupby(by=["CFN Id"], group_keys=False).sum()[["Total"]]
+
+    # Sort the data by "Total" in descending order and take the top 10
+    top_10_sales = sales_by_cfn.nlargest(10, 'Total')
+
+    # Calculate the percentage of each CFN's total sales as a percentage of the total sum
+    top_10_sales["Percentage"] = (top_10_sales["Total"] / total_sales) * 100
+
+    # Add a formatted text column for display
+    top_10_sales["formatted_text"] = top_10_sales["Total"].apply(
+        lambda x: format_currency(x, 'USD', locale='en_US', currency_digits=True))
+
+    # Create the hovertext with formatted text and percentage
+    hover_text = top_10_sales.apply(
+        lambda row: f"{row['formatted_text']}<br>({row['Percentage']:.2f}%)", axis=1)
+
     fig_CFN = px.bar(
-        # sales_by_cfn,
         top_10_sales,
         y="Total",
-        # x=sales_by_cfn.index,
         x=top_10_sales.index,
-        text='formatted_text',
+        text=hover_text,
         text_auto=False,
         title="<b>Top 10 Sales by CFN</b>",
         color_discrete_sequence=["#0e72b5"],
         template="plotly_white",
         orientation='v'
+        # height=700
     )
-    fig_CFN.update_traces(textposition='outside', hovertemplate=None)
+
+    fig_CFN.update_traces(textposition='outside', hovertemplate='%{text}')
 
     fig_CFN.update_layout(
         yaxis=dict(tickmode="auto"),
         xaxis={'categoryorder': 'total descending'},
-        plot_bgcolor="rgba(0,0,0,0)",
         xaxis_title="CFN",
         yaxis_title="Total Sales",
         margin=dict(
-            l=30,
+            l=60,
             r=30,
             b=50,
             t=50,
             pad=10
         ),
     )
+
+    fig.update_yaxes(scaleratio=10)
+
     st.plotly_chart(fig_CFN, use_container_width=True)
 
-    # HIDE LESS THAN THRESHOLD
-    THRESHOLD_PERCENTAGE = 3
-    total_percentage = df['Total'].sum()
-    threshold_value = total_percentage * (THRESHOLD_PERCENTAGE / 100)
-    df_grouped = df.copy()
-    df_grouped.loc[df_grouped['Total'] < threshold_value, 'CFN Id'] = 'Others'
-    df_grouped['Percentage'] = df_grouped['Total'] / total_percentage * 100
-    df_grouped = df_grouped[df_grouped['CFN Id'] != 'Others'].round(2)
+    # PIE CHART
+    # sales_by_cfn_2 = df.groupby(
+    #     by=["CFN Id"], group_keys=False).sum()[["Total"]]
+    # sales_by_cfn_sorted = sales_by_cfn_2.sort_values(
+    #     by='Total', ascending=False)
+    # top_10_cfn = sales_by_cfn_sorted.head(10)
+    # total_percentage_top_10 = top_10_cfn['Total'].sum()
 
-    fig_2 = px.pie(
-        df_grouped,
-        values='Percentage',
-        names='CFN Id',
-        color_discrete_sequence=px.colors.diverging.RdYlBu_r,
-        hole=0.4,
-        hover_data=['Total']
-    )
+    # fig_2 = px.pie(
+    #     top_10_cfn,
+    #     values='Total',
+    #     names=top_10_cfn.index,
+    #     color_discrete_sequence=px.colors.diverging.RdYlBu_r,
+    #     hole=0.3,
+    #     hover_data=['Total']
+    # )
 
-    fig_2.update_traces(title_text='<b>Higher than 3%</b>', title_position='middle center',
-                        textposition='inside',
-                        texttemplate='%{label}<br>%{value:.2f}%')
-    st.plotly_chart(fig_2, use_container_width=True)
+    # fig_2.update_traces(title_position='middle center',
+    #                     textposition='inside', textinfo='percent+label')
+    # st.plotly_chart(fig_2, use_container_width=True)
+
+    # texttemplate='%{label}<br>%{value:.2f}%',
 
     st.markdown("""---""")
 
     # Display the filtered DataFrame
     # st.dataframe(df, use_container_width=True)
+    # st.dataframe(sales_by_cfn_2, use_container_width=True)
