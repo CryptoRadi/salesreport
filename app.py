@@ -151,6 +151,7 @@ if uploaded_file:
 
     # Sales Rep Charts
     bar1, bar2, bar3 = st.columns((20, 10, 20))
+
     with bar1:
         sales_by_rep = df.groupby(
             by=["Sales Rep Name"], group_keys=False).sum()[["Total"]]
@@ -273,6 +274,55 @@ if uploaded_file:
 
     st.markdown("""---""")
 
+    # Sales by ACCOUNTs Bar Chart
+    ship_to = df.groupby(
+        by=["Ship To Name"], group_keys=False).sum()[["Total"]]
+
+    ship_to_large = ship_to.nlargest(10, 'Total')
+
+    ship_to_large["formatted_text"] = (ship_to_large["Total"]
+                                       .apply(lambda x: format_currency(x, 'USD',
+                                                                        locale='en_US',
+                                                                        currency_digits=True)))
+    ship_to_large["hover_data"] = (df.groupby("Ship To Name")["PO Number"]
+                                   .unique()
+                                   .apply(lambda x: '<br>'.join(['PO Number: ' + i for i in x])))
+
+    fig_sales = px.bar(
+        ship_to_large,
+        x="Total",
+        y=ship_to_large.index,
+        text='formatted_text',
+        text_auto=False,
+        hover_data=['hover_data'],
+        title="<b>Sales by Accounts</b>",
+        color_discrete_sequence=["#0e72b5"] * len(ship_to_large),
+        template="plotly_white",
+        orientation='h'
+    )
+    fig_sales.update_traces(textposition='auto',
+                            hovertemplate='%{customdata[0]}')
+
+    fig_sales.update_layout(
+        xaxis=(dict(showgrid=False)),
+        # yaxis={'categoryorder': 'total descending'},
+        yaxis=dict(tickmode="auto"),
+        plot_bgcolor="rgba(0,0,0,0)",
+        xaxis_title="Total Sales",
+        yaxis_title="Account",
+        margin=dict(
+            l=30,
+            r=30,
+            b=20,
+            t=30,
+            pad=10
+        ),
+    )
+    st.plotly_chart(fig_sales, use_container_width=True,
+                    color=ship_to)
+
+    st.markdown("""---""")
+
     # CFN Charts only the VALUE
     # sales_by_cfn = df.groupby(
     #     by=["CFN Id"], group_keys=False).sum()[["Total"]]
@@ -317,6 +367,7 @@ if uploaded_file:
     # )
     # st.plotly_chart(fig_CFN, use_container_width=True)
 
+    # Top 10 Sales by CFN Bar chart
     total_sales = df["Total"].sum()
 
     # Group by CFN and calculate the sum of "Total" for each CFN
@@ -352,8 +403,10 @@ if uploaded_file:
     fig_CFN.update_traces(textposition='outside', hovertemplate='%{text}')
 
     fig_CFN.update_layout(
+        # xaxis=dict(tickmode="auto"),
+        xaxis=(dict(showgrid=False)),
+        # yaxis={'categoryorder': 'total descending'},
         yaxis=dict(tickmode="auto"),
-        xaxis={'categoryorder': 'total descending'},
         xaxis_title="CFN",
         yaxis_title="Total Sales",
         margin=dict(
