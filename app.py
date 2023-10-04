@@ -20,13 +20,13 @@ CACHE_KEY = "data_" + str(uploaded_file)
 @st.cache_data(ttl=3600)
 def get_data_from_excel(file):
     """Reads data from excel file and return DataFrame """
-    df = pd.read_excel(
+    df_int = pd.read_excel(
         file,
         engine='openpyxl',
         sheet_name='Report 1',
         skiprows=1, usecols='G, Q, R, U, V, AF, AJ'
     )
-    return df
+    return df_int
 
 
 if uploaded_file:
@@ -99,32 +99,32 @@ if uploaded_file:
     df = filter_data(df, 'Sales Rep Name', rep_options)
 
     # Select PO Number filter
-    options = st.sidebar.multiselect(
+    po_options = st.sidebar.multiselect(
         "Select PO Number:",
         options=['Select All'] + list(df['PO Number'].unique()),
         default=['Select All']
     )
-    if 'Select All' in options:
-        options = df['PO Number'].unique()
+    if 'Select All' in po_options:
+        po_options = df['PO Number'].unique()
     else:
-        options = list(set(options).intersection(
+        po_options = list(set(po_options).intersection(
             set(df['PO Number'].unique())))
-    filters['PO Number'] = options
-    df = filter_data(df, 'PO Number', options)
+    filters['PO Number'] = po_options
+    df = filter_data(df, 'PO Number', po_options)
 
     # Select Ship To Name filter
-    options = st.sidebar.multiselect(
+    ship_options = st.sidebar.multiselect(
         "Select Ship-To:",
         options=['Select All'] + list(df['Ship To Name'].unique()),
         default=['Select All']
     )
-    if 'Select All' in options:
-        options = df['Ship To Name'].unique()
+    if 'Select All' in ship_options:
+        ship_options = df['Ship To Name'].unique()
     else:
-        options = list(set(options).intersection(
+        ship_options = list(set(ship_options).intersection(
             set(df['Ship To Name'].unique())))
-    filters['Ship To Name'] = options
-    df = filter_data(df, 'Ship To Name', options)
+    filters['Ship To Name'] = ship_options
+    df = filter_data(df, 'Ship To Name', ship_options)
 
     # ---- MAINPAGE ----
     st.title(":bar_chart: Sales Dashboard")
