@@ -7,7 +7,7 @@ import plotly.express as px
 # Set Streamlit page configuration
 st.set_page_config(page_title="Sales Dashboard",
                    page_icon=":bar_chart:",
-                   layout="wide"
+                   layout="centered"
                    )
 
 # Allow the user to upload an XLSX file
@@ -24,7 +24,7 @@ def get_data_from_excel(file):
         file,
         engine='openpyxl',
         sheet_name='Report 1',
-        skiprows=1, usecols='G, Q, R, U, V, AF, AJ'
+        skiprows=1, usecols='G, I, Q, R, U, V, AF, AG, AJ'
     )
     return df_int
 
@@ -38,7 +38,8 @@ if uploaded_file:
     )]
 
     df = df.rename(columns={'Net Trade Sales in TAR @ AOP FX': 'Total',
-                            'Sales Order PO Number': 'PO Number'})
+                            'Sales Order PO Number': 'PO Number',
+                            'Net Trade Sales Qty in Base UOM': 'Quantity'})
 
     df = df[~df["Ship To Name"].str.contains(
         "Zahran Operations & Maintanance Co.|NUPCO Dammam -Ryl Commision Store|"
@@ -47,7 +48,8 @@ if uploaded_file:
         "NUPCO Qassim DC - MOH Store|Care Medical Center-Riyadh|NUPCO KAEC DC MODA - KSAFH Tabuk|"
         "Najran University Hospital|King Khaled Hospital - Majmaah|Ministry of Health Bisha|"
         "King Fahd Military Medical Complex|King Fahd University Hospital Al-Kh|"
-        "king Salman bin Abdulaziz Hospital"
+        "king Salman bin Abdulaziz Hospital|King Abdul Aziz Air Base Hospital D|"
+        "King Faisal Specialist Hospital Med|Taibah University"
     )]
 
     df['PO Number'] = df['PO Number'].str.extract(r'^(\d+)', expand=False)
@@ -57,8 +59,10 @@ if uploaded_file:
 
     df['Invoice Number'] = df['Invoice Number'].astype(str)  # remove commas
 
-    # if st.button("Clear Cache"):
-    #     st.rerun()
+    cot_mapping = {'SA801': 'EBD',
+                   'SA802': 'EMID',
+                   'SA806': 'GYN'}
+    df['Sales Force Id'] = df['Sales Force Id'].replace(cot_mapping)
 
     # ---- SIDEBAR ----
     st.sidebar.info(
@@ -315,6 +319,66 @@ if uploaded_file:
 
     st.markdown("""---""")
 
+    # Sales by COT Bar & Pie Chart
+    bar7, bar8, bar9 = st.columns((20, 10, 20))
+
+    with bar7:
+
+        cot = df.groupby(
+            by=["Sales Force Id"], group_keys=False).sum()[["Total"]]
+
+        cot["formatted_text"] = (cot["Total"]
+                                 .apply(lambda x: format_currency(x, 'USD',
+                                                                  locale='en_US',
+                                                                  currency_digits=True)))
+
+        fig_cot = px.bar(
+            cot,
+            y="Total",
+            x=cot.index,
+            text='formatted_text',
+            text_auto=False,
+            # hover_data=['hover_data'],
+            title="<b>Sales by COT</b>",
+            color_discrete_sequence=["#0e72b5"] * len(cot),
+            template="plotly_white",
+            orientation='v'
+        )
+        fig_cot.update_traces(textposition='outside',
+                              hovertemplate=None)
+
+        fig_cot.update_layout(
+            xaxis=(dict(showgrid=False)),
+            yaxis=dict(tickmode="auto"),
+            plot_bgcolor="rgba(0,0,0,0)",
+            xaxis_title="COT",
+            yaxis_title="Total Sales",
+            margin=dict(
+                l=30,
+                r=30,
+                b=50,
+                t=50,
+                pad=10
+            ),
+        )
+        st.plotly_chart(fig_cot, use_container_width=True,
+                        color=cot)
+
+    with bar9:
+        fig = px.pie(
+            df,
+            values='Total',
+            names='Sales Force Id',
+            # title='<b>Total Sales by COT (%)</b>',
+            color_discrete_sequence=px.colors.diverging.RdYlBu_r,
+            hole=0.3
+        )
+        fig.update_traces(textposition='inside',
+                          textinfo='percent+label')
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("""---""")
+
     # Top 10 Sales by CFN Bar chart
     total_sales = df["Total"].sum()
 
@@ -348,7 +412,8 @@ if uploaded_file:
         # height=700
     )
 
-    fig_CFN.update_traces(textposition='outside', hovertemplate='%{text}')
+    fig_CFN.update_traces(textposition='outside',
+                          hovertemplate='%{text}')
 
     fig_CFN.update_layout(
         # xaxis=dict(tickmode="auto"),
@@ -370,31 +435,60 @@ if uploaded_file:
 
     st.plotly_chart(fig_CFN, use_container_width=True)
 
-    # PIE CHART
-    # sales_by_cfn_2 = df.groupby(
-    #     by=["CFN Id"], group_keys=False).sum()[["Total"]]
-    # sales_by_cfn_sorted = sales_by_cfn_2.sort_values(
-    #     by='Total', ascending=False)
-    # top_10_cfn = sales_by_cfn_sorted.head(10)
-    # total_percentage_top_10 = top_10_cfn['Total'].sum()
-
-    # fig_2 = px.pie(
-    #     top_10_cfn,
-    #     values='Total',
-    #     names=top_10_cfn.index,
-    #     color_discrete_sequence=px.colors.diverging.RdYlBu_r,
-    #     hole=0.3,
-    #     hover_data=['Total']
-    # )
-
-    # fig_2.update_traces(title_position='middle center',
-    #                     textposition='inside', textinfo='percent+label')
-    # st.plotly_chart(fig_2, use_container_width=True)
-
-    # texttemplate='%{label}<br>%{value:.2f}%',
-
     st.markdown("""---""")
+
+    # quantity_sum_by_cfn = df.groupby(
+    #     "CFN Id")["Quantity"].agg('sum').reset_index()
+
+    quantity_sum_by_cfn = df.groupby('CFN Id').agg(
+        {'Quantity': 'sum', 'Total': 'sum'}).reset_index()
+
+    quantity_sum_by_cfn = quantity_sum_by_cfn[quantity_sum_by_cfn["Quantity"] != 0.000]
+
+    quantity_sum_by_cfn = quantity_sum_by_cfn.sort_values(
+        by='Total', ascending=False)
+
+    quantity_sum_by_cfn['Total'] = quantity_sum_by_cfn['Total'].apply(
+        lambda x: f"${x:,.2f}")
+
+    quantity_sum_by_cfn['Quantity'] = quantity_sum_by_cfn['Quantity'].astype(
+        int)
+
+    quantity_sum_by_cfn['Quantity'] = quantity_sum_by_cfn['Quantity'].apply(
+        lambda x: f"{x:,}")
+
+    quantity_sum_by_cfn = quantity_sum_by_cfn.rename(columns={'CFN Id': 'CFN',
+                                                              'Quantity': 'Total Quantity'})
+
+    TABLE_WIDTH = "100%"
+
+    # Centering the table and adjusting its width with CSS
+    st.write(
+        f"""
+        <style>
+        .my-table {{
+            margin: 0 auto;
+            text-align: center;
+            width: {TABLE_WIDTH};
+            color: WhiteSmoke;
+        }}
+        .my-table th {{
+            text-align: center;
+            color: Peru;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    st.write(
+        pd.DataFrame(quantity_sum_by_cfn[['CFN', 'Total Quantity', 'Total']]).to_html(
+            classes=["my-table"], index=False),
+        unsafe_allow_html=True
+    )
 
     # Display the filtered DataFrame
     # st.dataframe(df, use_container_width=True)
-    # st.dataframe(sales_by_cfn_2, use_container_width=True)
+
+    # sorted_df = quantity_sum_by_cfn.sort_values(by='Total', ascending=False)
+    # st.dataframe(sorted_df, hide_index=True,
+    #              use_container_width=True)
