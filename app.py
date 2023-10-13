@@ -49,10 +49,16 @@ if uploaded_file:
         "Najran University Hospital|King Khaled Hospital - Majmaah|Ministry of Health Bisha|"
         "King Fahd Military Medical Complex|King Fahd University Hospital Al-Kh|"
         "king Salman bin Abdulaziz Hospital|King Abdul Aziz Air Base Hospital D|"
-        "King Faisal Specialist Hospital Med|Taibah University"
+        "King Faisal Specialist Hospital Med|Taibah University|King Fahad Hospital Madinah|"
+        "Dallah Hospital - Namar|Ministry of Health Gizan|NUPCO Baha DC - MOH  Bisha"
     )]
 
-    df['PO Number'] = df['PO Number'].str.extract(r'^(\d+)', expand=False)
+    # Remove everything but numbers
+    # df['PO Number'] = df['PO Number'].str.extract(r'^(\d+)', expand=False)
+
+    po_mapping = {'4300000911-2021100147001': '4300000911',
+                  '4600033909 - 2021100209001': '4600033909'}
+    df['PO Number'] = df['PO Number'].replace(po_mapping)
 
     df.dropna(subset=["Total", "PO Number"], inplace=True)
     df = df[df["Total"] != 0.000]
@@ -140,7 +146,7 @@ if uploaded_file:
     cpad1, col, pad2 = st.columns((10, 10, 10))
     with col:
         st.subheader("Total Sales:")
-        st.subheader(f"US $ {total_sales:,}")
+        st.subheader(f"US ${total_sales:,}")
     st.markdown("##")
 
     st.markdown("""---""")
@@ -284,7 +290,7 @@ if uploaded_file:
                                    .unique()
                                    .apply(lambda x: '<br>'.join(['PO Number: ' + i for i in x])))
 
-    fig_sales = px.bar(
+    fig_acc = px.bar(
         ship_to_large,
         x="Total",
         y=ship_to_large.index,
@@ -296,10 +302,10 @@ if uploaded_file:
         template="plotly_white",
         orientation='h'
     )
-    fig_sales.update_traces(textposition='auto',
-                            hovertemplate='%{customdata[0]}')
+    fig_acc.update_traces(textposition='auto',
+                          hovertemplate='%{customdata[0]}')
 
-    fig_sales.update_layout(
+    fig_acc.update_layout(
         xaxis=(dict(showgrid=False)),
         # yaxis={'categoryorder': 'total descending'},
         yaxis=dict(tickmode="auto"),
@@ -314,7 +320,8 @@ if uploaded_file:
             pad=10
         ),
     )
-    st.plotly_chart(fig_sales, use_container_width=True,
+
+    st.plotly_chart(fig_acc, use_container_width=True,
                     color=ship_to)
 
     st.markdown("""---""")
@@ -413,7 +420,7 @@ if uploaded_file:
     )
 
     fig_CFN.update_traces(textposition='outside',
-                          hovertemplate='%{text}')
+                          hovertemplate='%{text}', cliponaxis=False)
 
     fig_CFN.update_layout(
         # xaxis=dict(tickmode="auto"),
@@ -437,9 +444,12 @@ if uploaded_file:
 
     st.markdown("""---""")
 
+    st.text("Total Sales:")
+    st.text(f"US ${total_sales:,.2f}")
     # quantity_sum_by_cfn = df.groupby(
     #     "CFN Id")["Quantity"].agg('sum').reset_index()
 
+    # CFN/Qty/Total HTML Table
     quantity_sum_by_cfn = df.groupby('CFN Id').agg(
         {'Quantity': 'sum', 'Total': 'sum'}).reset_index()
 
@@ -447,6 +457,9 @@ if uploaded_file:
 
     quantity_sum_by_cfn = quantity_sum_by_cfn.sort_values(
         by='Total', ascending=False)
+
+    quantity_sum_by_cfn['%'] = (
+        (quantity_sum_by_cfn['Total'] / total_sales) * 100).round(2)
 
     quantity_sum_by_cfn['Total'] = quantity_sum_by_cfn['Total'].apply(
         lambda x: f"${x:,.2f}")
@@ -458,7 +471,8 @@ if uploaded_file:
         lambda x: f"{x:,}")
 
     quantity_sum_by_cfn = quantity_sum_by_cfn.rename(columns={'CFN Id': 'CFN',
-                                                              'Quantity': 'Total Quantity'})
+                                                              'Quantity': 'Total Quantity',
+                                                              'Total': 'Total Sales'})
 
     TABLE_WIDTH = "100%"
 
@@ -481,7 +495,7 @@ if uploaded_file:
         unsafe_allow_html=True
     )
     st.write(
-        pd.DataFrame(quantity_sum_by_cfn[['CFN', 'Total Quantity', 'Total']]).to_html(
+        pd.DataFrame(quantity_sum_by_cfn[['CFN', 'Total Quantity', 'Total Sales', '%']]).to_html(
             classes=["my-table"], index=False),
         unsafe_allow_html=True
     )
