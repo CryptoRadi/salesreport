@@ -50,7 +50,10 @@ if uploaded_file:
         "King Fahd Military Medical Complex|King Fahd University Hospital Al-Kh|"
         "king Salman bin Abdulaziz Hospital|King Abdul Aziz Air Base Hospital D|"
         "King Faisal Specialist Hospital Med|Taibah University|King Fahad Hospital Madinah|"
-        "Dallah Hospital - Namar|Ministry of Health Gizan|NUPCO Baha DC - MOH  Bisha"
+        "Dallah Hospital - Namar|Ministry of Health Gizan|NUPCO Baha DC - MOH  Bisha|"
+        "King Fahad Armed Forces Hosp. Jed.|FAMILY CARE HOSPITAL|"
+        "Al Balsam Charity|Al Barakah Mountains Trading EST|Dr. Suleiman Fakeeh Hospital- NEOM|"
+        "Flow Medical Company \\(Habib Group\\)"
     )]
 
     # Remove everything but numbers
