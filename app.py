@@ -33,27 +33,19 @@ if uploaded_file:
     df = get_data_from_excel(uploaded_file)
 
     # Filter the DataFrame
-    df = df[df["Sales Rep Name"].str.contains(
-        "RADI, UMMAIR|UNASSIGNED"
-    )]
-
     df = df.rename(columns={'Net Trade Sales in TAR @ AOP FX': 'Total',
                             'Sales Order PO Number': 'PO Number',
                             'Net Trade Sales Qty in Base UOM': 'Quantity'})
 
-    df = df[~df["Ship To Name"].str.contains(
-        "Zahran Operations & Maintanance Co.|NUPCO Dammam -Ryl Commision Store|"
-        "NUPCO Jeddah DC MOI-Security Forces|NUPCO Jeddah MOE -KAUH|"
-        "Prince Sultan Military Medical City|Al Marjan medical center company|"
-        "NUPCO Qassim DC - MOH Store|Care Medical Center-Riyadh|NUPCO KAEC DC MODA - KSAFH Tabuk|"
-        "Najran University Hospital|King Khaled Hospital - Majmaah|Ministry of Health Bisha|"
-        "King Fahd Military Medical Complex|King Fahd University Hospital Al-Kh|"
-        "king Salman bin Abdulaziz Hospital|King Abdul Aziz Air Base Hospital D|"
-        "King Faisal Specialist Hospital Med|Taibah University|King Fahad Hospital Madinah|"
-        "Dallah Hospital - Namar|Ministry of Health Gizan|NUPCO Baha DC - MOH  Bisha|"
-        "King Fahad Armed Forces Hosp. Jed.|FAMILY CARE HOSPITAL|"
-        "Al Balsam Charity|Al Barakah Mountains Trading EST|Dr. Suleiman Fakeeh Hospital- NEOM|"
-        "Flow Medical Company \\(Habib Group\\)"
+    df = df[df["Ship To Name"].str.contains(
+        "Qateef Central Hospital|Ministry of Health Dammam|Dammam Central Hospital|"
+        "DAMMAM MEDICAL COMPLEX MOH|Ministry of Health Al-Ahsa|"
+        "NUPCO Dammam DC - MOH Ahsa|Prince Saud Bin Jalawy Hospital|"
+        "Ministry of Health Hafr Al-Batin|NUPCO Dammam DC -  MOH"
+    )]
+
+    df = df[df["Sales Force Id"].str.contains(
+        "SA801|SA802|SA806"
     )]
 
     # Remove everything but numbers
