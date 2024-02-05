@@ -443,12 +443,23 @@ if uploaded_file:
 
     # Total by MPG ID
     st.text("Total Sales by MPG:")
+
     # Group by 'MPG Id', sum, and then reset the index to make 'MPG Id' a column
     mpg_total = df.groupby(by=["MPG Id"]).sum().reset_index()[
         ["MPG Id", "Total"]]
 
+    # Calculate the overall total
+    overall_total = mpg_total['Total'].sum()
+
+    # Add a percentage column
+    mpg_total['Percentage'] = (mpg_total['Total'] / overall_total) * 100
+
     # Format the 'Total' column to include commas for thousands
     mpg_total['Total'] = mpg_total['Total'].apply(lambda x: f"$ {x:,.2f}")
+
+    # Format the 'Percentage' column to show as a percentage with 2 decimal places
+    mpg_total['Percentage'] = mpg_total['Percentage'].apply(
+        lambda x: f"{x:.2f}%")
 
     TABLE_WIDTH = "100%"
 
@@ -470,11 +481,6 @@ if uploaded_file:
         """,
         unsafe_allow_html=True
     )
-    # st.write(
-    #     pd.DataFrame(mpg_total[['MPG Id', 'Total']]).to_html(
-    #         classes=["my-table"], index=False),
-    #     unsafe_allow_html=True
-    # )
 
     st.write(
         mpg_total.to_html(classes=["my-table"], index=False),
