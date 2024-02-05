@@ -24,7 +24,7 @@ def get_data_from_excel(file):
         file,
         engine='openpyxl',
         sheet_name='Report 1',
-        skiprows=1, usecols='G, I, Q, R, U, V, AF, AG, AJ'
+        skiprows=1, usecols='G, I, L, Q, R, U, V, AF, AG, AJ'
     )
     return df_int
 
@@ -64,6 +64,10 @@ if uploaded_file:
                    'SA802': 'EMID',
                    'SA806': 'GYN'}
     df['Sales Force Id'] = df['Sales Force Id'].replace(cot_mapping)
+
+    mpg_mapping = {'J5': 'ACC', 'L6': 'ES', 'M2': 'HW', 'M4': 'HI', 'N6': 'OS',
+                   'P3': 'ST', 'Q3': 'VS', 'R9': 'TrueClear', 'U4': 'Skin Stapler'}
+    df['MPG Id'] = df['MPG Id'].replace(mpg_mapping)
 
     # ---- SIDEBAR ----
     st.sidebar.info(
@@ -143,8 +147,6 @@ if uploaded_file:
         st.subheader("Total Sales:")
         st.subheader(f"US ${total_sales:,}")
     st.markdown("##")
-
-    st.markdown("""---""")
 
     # Sales Rep Charts
     bar1, bar2, bar3 = st.columns((20, 10, 20))
@@ -439,6 +441,48 @@ if uploaded_file:
 
     st.markdown("""---""")
 
+    # Total by MPG ID
+    st.text("Total Sales by MPG:")
+    # Group by 'MPG Id', sum, and then reset the index to make 'MPG Id' a column
+    mpg_total = df.groupby(by=["MPG Id"]).sum().reset_index()[
+        ["MPG Id", "Total"]]
+
+    # Format the 'Total' column to include commas for thousands
+    mpg_total['Total'] = mpg_total['Total'].apply(lambda x: f"$ {x:,.2f}")
+
+    TABLE_WIDTH = "100%"
+
+    # Centering the table and adjusting its width with CSS
+    st.write(
+        f"""
+        <style>
+        .my-table {{
+            margin: 0 auto;
+            text-align: center;
+            width: {TABLE_WIDTH};
+            color: WhiteSmoke;
+        }}
+        .my-table th {{
+            text-align: center;
+            color: Peru;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    # st.write(
+    #     pd.DataFrame(mpg_total[['MPG Id', 'Total']]).to_html(
+    #         classes=["my-table"], index=False),
+    #     unsafe_allow_html=True
+    # )
+
+    st.write(
+        mpg_total.to_html(classes=["my-table"], index=False),
+        unsafe_allow_html=True
+    )
+
+    st.markdown("""---""")
+
     st.text("Total Sales:")
     st.text(f"US ${total_sales:,.2f}")
     # quantity_sum_by_cfn = df.groupby(
@@ -457,7 +501,7 @@ if uploaded_file:
         (quantity_sum_by_cfn['Total'] / total_sales) * 100).round(2)
 
     quantity_sum_by_cfn['Total'] = quantity_sum_by_cfn['Total'].apply(
-        lambda x: f"${x:,.2f}")
+        lambda x: f"$ {x:,.2f}")
 
     quantity_sum_by_cfn['Quantity'] = quantity_sum_by_cfn['Quantity'].astype(
         int)
