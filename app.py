@@ -41,9 +41,11 @@ if uploaded_file:
         "Qateef Central Hospital|Ministry of Health Dammam|Dammam Central Hospital|"
         "DAMMAM MEDICAL COMPLEX MOH|Ministry of Health Al-Ahsa|"
         "NUPCO Dammam DC - MOH Ahsa|Prince Saud Bin Jalawy Hospital|"
-        "Ministry of Health Hafr Al-Batin|NUPCO Dammam DC -  MOH"
+        "Ministry of Health Hafr Al-Batin|NUPCO Dammam DC -  MOH|NUPCO Dammam \(Agility DC\)",
+        case=False, regex=True
     )]
 
+    st.write('Ship To Name')
     df = df[df["Sales Force Id"].str.contains(
         "SA801|SA802|SA806"
     )]
